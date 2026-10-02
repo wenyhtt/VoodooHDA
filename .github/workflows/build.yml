@@ -36,17 +36,6 @@ jobs:
             CODE_SIGN_IDENTITY="" \
             build
 
-      - name: Download VoodooHDA.prefPane (Release302)
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          mkdir -p prefpane
-          gh release download Release302 \
-            --repo OWNER/REPO \
-            --pattern "VoodooHDA.prefPane.zip" \
-            --dir prefpane
-          unzip -o prefpane/VoodooHDA.prefPane.zip -d prefpane
-
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
