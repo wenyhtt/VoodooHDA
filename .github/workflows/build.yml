@@ -1,0 +1,57 @@
+name: Build VoodooHDA
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build-bigsur:
+    name: Build (Big Sur and up)
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout VoodooHDA
+        uses: actions/checkout@v4
+
+      - name: Checkout MacKernelSDK (joevt fork)
+        uses: actions/checkout@v4
+        with:
+          repository: joevt/MacKernelSDK
+          path: deps/MacKernelSDK
+
+      - name: Symlink MacKernelSDK into project
+        run: ln -sfn "$GITHUB_WORKSPACE/deps/MacKernelSDK" MacKernelSDK
+
+      - name: Build kext
+        run: |
+          xcodebuild \
+            -project tranc/VoodooHDA_BS.xcodeproj \
+            -alltargets \
+            -configuration Release \
+            SYMROOT="$GITHUB_WORKSPACE/build" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            build
+
+      - name: Download VoodooHDA.prefPane (Release302)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p prefpane
+          gh release download Release302 \
+            --repo OWNER/REPO \
+            --pattern "VoodooHDA.prefPane.zip" \
+            --dir prefpane
+          unzip -o prefpane/VoodooHDA.prefPane.zip -d prefpane
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: VoodooHDA-bigsur
+          path: |
+            build/Release/*.kext
+            prefpane/VoodooHDA.prefPane
+          if-no-files-found: warn
